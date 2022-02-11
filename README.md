@@ -1,5 +1,5 @@
 # Predictive-Modelling-Assessment-1-Predicting-burned-area-of-forest-fires
-Using linear regression model for predicting burned area of forest fires
+Using linear regression model for predicting burned area of forest fires. (Grade 70%).
 
 # Section 1.0 Data Summary
 
