@@ -119,90 +119,85 @@ Correlation tests were conducted to illustrate the best fitting model using the 
 
 # Section 5.0 R Script
 
-library(corrplot) # for correlation matrix graph visualisation # Install packages 
+>library(corrplot) # for correlation matrix graph visualisation # Install packages 
+>library(ggplot2) # for graph visualisations 
+>library(car) # for VIF test
+>library(caTools)
+>library(dplyr) # to use the select function 
+>library(MASS) # for AIC test
 
-library(ggplot2) # for graph visualisations 
+>setwd("~/Desktop/predicitve model assessment 1") # sets the file with the fire data as the working dictionary to important the dataset 
+>fire_data <- read.csv("forestfires.csv", header = TRUE) # imports the data set. The header=True command tells RStudio to use the first row of the data file as the names of each variable/column. 
+>attach(fire_data) # attaches the data to your environment so that you can directly refer to the variable by name
+>View(fire_data) # shows the fire data in a table 
+>names(fire_data) # shows the name of variables in the dataset
+>head(fire_data)
 
-library(car) # for VIF test
+>summary (fire_data) # provides more information from fitting the model such as Residuals (Min      1Q  Median      3Q     Max), Coefficients (Estimate Std. Error t value Pr(>|t|)) , Signif. codes: (0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1), Residual standard error, Multiple R-squared, Adjusted R-squared, F-statistic, and the  p-value
 
-library(caTools)
+>datacorrelation <- subset(fire_data [,5:13]) # subset data to remove x,y, month and day as they are factors 
+>nums <- unlist(lapply(datacorrelation, is.numeric)) # used to create correlation plot from numeric values in fire data
+>firecorr <- cor(datacorrelation[, nums])
+>corrplot(firecorr, type = "upper", method = "number") # correlation matrix graph visualization 
+>chart.Correlation(firecorr, histogram = TRUE, pch= 19) # scatter plot and hist graph visualization 
+>pairs(datacorrelation)# graphical matrix visualization 
 
-library(dplyr) # to use the select function 
+>fire_data$logarea <- log(fire_data$area+1)# transforming the data 
+>fire_data$month <- factor(fire_data$month) # factor returns the original object of a class with the requested column specified as a factor rather than numeric.
+>fire_data$day <- factor(fire_data$day)
+>fire_data2 <- fire_data %>% select(area, month, day, FFMC, DMC, DC, ISI, temp, RH, wind, rain) # Removes X and Y variables as they are factors and not relevant to the model as don’t impact the burned area. 
+>split = sample.split(fire_data2$area, SplitRatio = 0.75) # Sets up train and test populations for model validation and predication tests 
+>train = subset(fire_data2, split == TRUE)
+>test = subset(fire_data2, split == FALSE)
 
-library(MASS) # for AIC test
+>model1 <- lm(area~month + day+ FFMC + DMC + DC + ISI + temp + RH + wind + rain, data = train) # Creating initial model (all variables)
+>summary(model1)
+>par(mfrow = c(2,2)) # partitions your graphical display if you want to produce multiple graphs on a single plot.
+>plot(model1) # plots residual graphs for model 1 
 
-setwd("~/Desktop/predicitve model assessment 1") # sets the file with the fire data as the working dictionary to important the dataset 
-fire_data <- read.csv("forestfires.csv", header = TRUE) # imports the data set. The header=True command tells RStudio to use the first row of the data file as the names of each variable/column. 
-attach(fire_data) # attaches the data to your environment so that you can directly refer to the variable by name
-View(fire_data) # shows the fire data in a table 
-names(fire_data) # shows the name of variables in the dataset
-head(fire_data)
+>model2 <- lm(log(area+1)~month + day+ log(FFMC) + log(DMC) + log(DC) + log(ISI+1) + log(temp) + log(RH) + log(wind) + log(rain+1), data = train) # Model 2 (all variables and log)
+>summary(model2)
 
-summary (fire_data) # provides more information from fitting the model such as Residuals (Min      1Q  Median      3Q     Max), Coefficients (Estimate Std. Error t value Pr(>|t|)) , Signif. codes: (0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1), Residual standard error, Multiple R-squared, Adjusted R-squared, F-statistic, and the  p-value
+>model3 <- lm(log(area+1)~ log(FFMC) + log(DMC) + log(DC) + log(ISI+1) + log(temp) + log(RH) + log(wind) + log(rain+1), data = train) # Model 3 (removed month and day)
+>summary(model3)
 
-datacorrelation <- subset(fire_data [,5:13]) # subset data to remove x,y, month and day as they are factors 
-nums <- unlist(lapply(datacorrelation, is.numeric)) # used to create correlation plot from numeric values in fire data
-firecorr <- cor(datacorrelation[, nums])
-corrplot(firecorr, type = "upper", method = "number") # correlation matrix graph visualization 
-chart.Correlation(firecorr, histogram = TRUE, pch= 19) # scatter plot and hist graph visualization 
-pairs(datacorrelation)# graphical matrix visualization 
+>vif(model3) #vif test for collinear variables to remove (all fine as below all variables below 10) 
 
-fire_data$logarea <- log(fire_data$area+1)# transforming the data 
-fire_data$month <- factor(fire_data$month) # factor returns the original object of a class with the requested column specified as a factor rather than numeric.
-fire_data$day <- factor(fire_data$day)
-fire_data2 <- fire_data %>% select(area, month, day, FFMC, DMC, DC, ISI, temp, RH, wind, rain) # Removes X and Y variables as they are factors and not relevant to the model as don’t impact the burned area. 
-split = sample.split(fire_data2$area, SplitRatio = 0.75) # Sets up train and test populations for model validation and predication tests 
-train = subset(fire_data2, split == TRUE)
-test = subset(fire_data2, split == FALSE)
+>model4 <- lm(log(area+1)~ log(FFMC) + log(DMC) + log(DC) + log(ISI+1) + log(temp) + log(RH) + log(wind), data = train) # Model 4 (removed rain from model 3)
+>summary(model4)
 
-model1 <- lm(area~month + day+ FFMC + DMC + DC + ISI + temp + RH + wind + rain, data = train) # Creating initial model (all variables)
-summary(model1)
-par(mfrow = c(2,2)) # partitions your graphical display if you want to produce multiple graphs on a single plot.
-plot(model1) # plots residual graphs for model 1 
+>model5 <- lm(log(area+1)~ log(FFMC) + log(DMC) + log(ISI+1) + log(temp) + log(RH) + log(wind), data = train) # Model 5 (removed DC from model 4)
+>summary(model5)
 
-model2 <- lm(log(area+1)~month + day+ log(FFMC) + log(DMC) + log(DC) + log(ISI+1) + log(temp) + log(RH) + log(wind) + log(rain+1), data = train) # Model 2 (all variables and log)
-summary(model2)
+>model6 <- lm(log(area+1)~ log(DMC) + log(ISI+1) + log(temp) + log(RH) + log(wind), data = train) # Model 6 (reomved FFMC from model 5)
+>summary(model6)
 
-model3 <- lm(log(area+1)~ log(FFMC) + log(DMC) + log(DC) + log(ISI+1) + log(temp) + log(RH) + log(wind) + log(rain+1), data = train) # Model 3 (removed month and day)
-summary(model3)
+>model7 <- lm(log(area+1)~ log(DMC) + log(temp) + log(RH) + log(wind), data = train) # Model 7 (removed ISI from model 6)
+>summary(model7)
 
-vif(model3) #vif test for collinear variables to remove (all fine as below all variables below10) 
+>starting.model <- lm(log(area+1) ~ month + day+ log(FFMC) + log(DMC) + log(DC) + log(ISI+1) + log(temp) + log(RH) + log(wind) + log(rain+1), data = train) # AIC >best model (shows best model is DMC + temp + RH)
+>simple.model <- lm(log(area+1)~ 1, data = train)
+>stepAIC(starting.model, scope = list(upper = starting.model, lower = simple.model), direction = "both")
 
-model4 <- lm(log(area+1)~ log(FFMC) + log(DMC) + log(DC) + log(ISI+1) + log(temp) + log(RH) + log(wind), data = train) # Model 4 (removed rain from model 3 summary)
-summary(model4)
+>model8 <- lm(log(area+1)~ log(DMC) + log(temp) + log(RH), data = train) # Model 8 (removed wind from model 7 and AIC test/ lowest AIC of all models)
+>summary(model8)
 
-model5 <- lm(log(area+1)~ log(FFMC) + log(DMC) + log(ISI+1) + log(temp) + log(RH) + log(wind), data = train) # Model 5 (removed DC from model 4)
-summary(model5)
+>anova(model8, model2) #ANOVA test (model 8 vs model 2. Model 8 is more accurate fitting model as p-value is not sufficiently low (usually greater than 0.05), thus favour the simpler model). Model 8 will therefore be used for the prediction 
 
-model6 <- lm(log(area+1)~ log(DMC) + log(ISI+1) + log(temp) + log(RH) + log(wind), data = train) # Model 6 (reomved FFMC from model 5)
-summary(model6)
+>coef(model8) # residual plot for model 8 
+>par(mfrow = c(2,2))
+>plot(model8)
 
-model7 <- lm(log(area+1)~ log(DMC) + log(temp) + log(RH) + log(wind), data = train) # Model 7 (removed ISI from model 6)
-summary(model7)
+>test$area
+>predict(model8, test) # uses test rather than train subset of data 
+>predict (model8, test[1:5,]) 
+>RMSE <- function(predicted, true) mean ((predicted-true)^2)^.5
+>RMSE (predict(model8, test), test$area)
+>predict (model2, test[1:5,])
+>RMSE (predict(model2, test), test$area)
 
-starting.model <- lm(log(area+1) ~ month + day+ log(FFMC) + log(DMC) + log(DC) + log(ISI+1) + log(temp) + log(RH) + log(wind) + log(rain+1), data = train) # AIC best model (shows best model is DMC + temp + RH)
-simple.model <- lm(log(area+1)~ 1, data = train)
-stepAIC(starting.model, scope = list(upper = starting.model, lower = simple.model), direction = "both")
-
-model8 <- lm(log(area+1)~ log(DMC) + log(temp) + log(RH), data = train) # Model 8 (removed wind from model 7 and AIC test/ lowest AIC of all models)
-summary(model8)
-
-anova(model8, model2) #ANOVA test (model 8 vs model 2. Model 8 is more accurate fitting model as p-value is not sufficiently low (usually greater than 0.05), thus favour the simpler model). Model 8 will therefore be used for the prediction 
-
-coef(model8) # residual plot for model 8 
-par(mfrow = c(2,2))
-plot(model8)
-
-test$area
-predict(model8, test) # uses test rather than train subset of data 
-predict (model8, test[1:5,]) 
-RMSE <- function(predicted, true) mean ((predicted-true)^2)^.5
-RMSE (predict(model8, test), test$area)
-predict (model2, test[1:5,])
-RMSE (predict(model2, test), test$area)
-
-cor(test[,"area"],predict(model8, test)) # correlation of prediction vs test data 
-cor(test[,"area"],predict(model2, test))
+>cor(test[,"area"],predict(model8, test)) # correlation of prediction vs test data 
+>cor(test[,"area"],predict(model2, test))
 
 
 
