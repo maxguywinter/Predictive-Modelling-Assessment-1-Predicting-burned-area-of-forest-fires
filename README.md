@@ -119,6 +119,7 @@ Correlation tests were conducted to illustrate the best fitting model using the 
 
 # Section 5.0 R Script
 
+```{r} 
 >library(corrplot) # for correlation matrix graph visualisation # Install packages 
 >library(ggplot2) # for graph visualisations 
 >library(car) # for VIF test
@@ -198,7 +199,7 @@ Correlation tests were conducted to illustrate the best fitting model using the 
 
 >cor(test[,"area"],predict(model8, test)) # correlation of prediction vs test data 
 >cor(test[,"area"],predict(model2, test))
-
+```
 
 
 
